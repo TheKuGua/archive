@@ -468,16 +468,16 @@ body.modal-open {
     <input id="search" placeholder="搜索姓名/编码/职务/地址" oninput="render()">
     <select id="addrFilter" class="addr-select" onchange="render()">
       <option value="">全部地址</option>
-      <option value="大力">大力</option>
+      <option value="椿屿">椿屿</option>
       <option value="霜月镇">霜月镇</option>
       <option value="诸神">诸神</option>
       <option value="梦幻小镇">梦幻小镇</option>
-      <option value="地址5">地址5</option>
-      <option value="地址6">地址6</option>
-      <option value="地址7">地址7</option>
-      <option value="地址8">地址8</option>
-      <option value="地址9">地址9</option>
-      <option value="地址10">地址10</option>
+      <option value="碧海市">碧海市</option>
+      <option value="故里">故里</option>
+      <option value="晴川">晴川</option>
+      <option value="谪仙">谪仙</option>
+      <option value="青溪">青溪</option>
+      <option value="江南里">江南里</option>
     </select>
     <button class="btn-add" id="addBtn" onclick="add()">新增档案</button>
   </div>
@@ -494,7 +494,7 @@ body.modal-open {
   <div class="modal-box">
     <div class="close" onclick="closeModal()">&times;</div>
     <h3 id="modalTitle">新增档案</h3>
-    <input type="hidden" id="editIdx">
+    <input type="hidden" id="editId">
     <div class="input-box"><label>姓名</label><input id="name"></div>
     <div class="input-box">
       <label>性别</label>
@@ -528,19 +528,28 @@ let role = null;
 let userType = null;
 let dataList = [];
 let draggedIndex = -1;
-
-// GitHub 直连配置（不分离、直接读取完整JSON）
+// GitHub 直连配置
 const GITHUB_BASE = "https://TheKuGua.github.io/archive/";
 const JSON_URL = `${GITHUB_BASE}档案数据.json`;
 
-// 从 GitHub 直接加载完整JSON（图片Base64内嵌，不分离）
+// ========== 【修复1】生成全局唯一ID，彻底解决下标错乱 ==========
+function generateUniqueId() {
+  return Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+}
+
+// 从 GitHub 加载数据
 async function loadFromGitHub() {
   try {
     const res = await fetch(JSON_URL);
-    dataList = await res.json();
+    const remoteData = await res.json();
+    // 兼容旧数据：给没有ID的历史条目补全ID
+    dataList = remoteData.map(item => {
+      if (!item.id) item.id = generateUniqueId();
+      return item;
+    });
     saveDataToLocal();
     render();
-    alert("✅ GitHub 加载成功！");
+    alert("✅ GitHub 加载成功！已自动补全数据ID");
   } catch (err) {
     console.error(err);
     alert("❌ GitHub 加载失败");
@@ -580,10 +589,29 @@ function initTableHeader() {
 }
 
 window.onload = async function () {
+  // 图片预览监听：选择图片后自动更新预览
+  document.getElementById("imgFile").onchange = function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const preview = document.getElementById("preview");
+      preview.src = ev.target.result;
+      preview.style.display = "block";
+    };
+    reader.readAsDataURL(file);
+  };
+
   await loadFromGitHub();
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) dataList = JSON.parse(saved);
+    if (saved) {
+      // 兼容本地旧数据，补全ID
+      dataList = JSON.parse(saved).map(item => {
+        if (!item.id) item.id = generateUniqueId();
+        return item;
+      });
+    }
   } catch (e) {}
   render();
 };
@@ -632,6 +660,8 @@ function render() {
   const addrVal = document.getElementById("addrFilter").value.trim();
   const dataBody = document.getElementById("dataBody");
   dataBody.innerHTML = "";
+
+  // 筛选逻辑
   let filtered = list.filter(item => {
     const nameMatch = (item.name||"").toLowerCase().includes(key);
     const codeMatch = (item.code||"").toLowerCase().includes(key);
@@ -644,20 +674,27 @@ function render() {
       (item.addr||"").toLowerCase().includes(addrVal.toLowerCase())
     );
   }
+
+  // 总数统计
   document.getElementById("totalInfo").innerText = key || addrVal
     ? `共 ${filtered.length} 条匹配 | 总档案：${list.length}`
     : `当前总档案数：${list.length}`;
+
+  // ========== 【修复2】渲染用唯一ID定位，彻底杜绝下标找错 ==========
   filtered.forEach((item, index) => {
-    const realIdx = list.indexOf(item);
+    const realIdx = list.findIndex(i => i.id === item.id);
     const row = document.createElement('tr');
     row.onclick = () => showDetail(realIdx);
     row.style.cursor = 'pointer';
+    row.dataset.itemId = item.id; // 给行绑定唯一ID
+
     if (userType === 'admin') {
       row.draggable = true;
       row.ondragstart = (e) => handleDragStart(e, realIdx);
       row.ondragover = handleDragOver;
       row.ondrop = (e) => handleDrop(e, realIdx);
     }
+
     row.innerHTML = `
       ${userType === 'admin' ? `<td><span class="drag-handle">≡</span></td>` : ''}
       <td>${realIdx+1}</td>
@@ -669,8 +706,8 @@ function render() {
       <td>${item.img?`<img src="${item.img}">`:'-'}</td>
       <td class="action">
         ${userType==='admin'?`
-        <button class="edit-btn" onclick="event.stopPropagation();edit(${realIdx})">编辑</button>
-        <button class="del-btn" onclick="event.stopPropagation();del(${realIdx})">删除</button>
+        <button class="edit-btn" onclick="event.stopPropagation();edit('${item.id}')">编辑</button>
+        <button class="del-btn" onclick="event.stopPropagation();del('${item.id}')">删除</button>
         `:'仅查看'}
       </td>
     `;
@@ -678,23 +715,34 @@ function render() {
   });
 }
 
+// ========== 【修复3】新增时彻底清空预览图，杜绝图片污染 ==========
 function add() {
   document.getElementById("modalTitle").innerText = "新增档案";
-  document.getElementById("editIdx").value = "";
+  document.getElementById("editId").value = "";
+  // 清空所有表单字段
   document.getElementById("name").value = "";
   document.querySelector('input[name="gender"][value="男"]').checked = true;
   document.getElementById("code").value = "";
   document.getElementById("job").value = "";
   document.getElementById("addr").value = "";
+  // 【关键修复】彻底清空图片相关，杜绝污染
   document.getElementById("imgFile").value = "";
-  document.getElementById("preview").style.display = "none";
+  const preview = document.getElementById("preview");
+  preview.src = "";
+  preview.style.display = "none";
+  // 打开弹窗
   document.getElementById("modal").style.display = "flex";
 }
 
-function edit(idx) {
-  const d = dataList[idx];
+// ========== 【修复4】编辑用唯一ID，不再依赖下标 ==========
+function edit(itemId) {
+  // 用ID找条目，永远不会找错人
+  const d = dataList.find(item => item.id === itemId);
+  if (!d) return;
+
   document.getElementById("modalTitle").innerText = "编辑档案";
-  document.getElementById("editIdx").value = idx;
+  document.getElementById("editId").value = itemId;
+  // 填充表单
   document.getElementById("name").value = d.name || "";
   document.querySelectorAll('input[name="gender"]').forEach(r=>r.checked=false);
   const g = document.querySelector(`input[name="gender"][value="${d.gender}"]`);
@@ -702,44 +750,58 @@ function edit(idx) {
   document.getElementById("code").value = d.code || "";
   document.getElementById("job").value = d.job || "";
   document.getElementById("addr").value = d.addr || "";
-  document.getElementById("preview").src = d.img || "";
-  document.getElementById("preview").style.display = d.img ? "block" : "none";
+  // 填充预览图，不会污染其他条目
+  const preview = document.getElementById("preview");
+  preview.src = d.img || "";
+  preview.style.display = d.img ? "block" : "none";
+  document.getElementById("imgFile").value = "";
+  // 打开弹窗
   document.getElementById("modal").style.display = "flex";
 }
 
+// ========== 【修复5】保存逻辑重写，彻底解决图片覆盖问题 ==========
 function save() {
-  const idx = document.getElementById("editIdx").value;
+  const itemId = document.getElementById("editId").value;
   const file = document.getElementById("imgFile").files[0];
   const gender = document.querySelector('input[name="gender"]:checked').value;
-  const obj = {
+  const baseObj = {
     name: document.getElementById("name").value || "",
     gender: gender,
     code: document.getElementById("code").value || "",
     job: document.getElementById("job").value || "",
-    addr: document.getElementById("addr").value || "",
-    img: document.getElementById("preview").src || ""
+    addr: document.getElementById("addr").value || ""
   };
-  if (!file) {
-    idx === "" ? dataList.push(obj) : (dataList[idx] = obj);
-    saveDataToLocal();
-    closeModal();
-    render();
-    return;
+
+  // 新增模式
+  if (!itemId) {
+    const newObj = { ...baseObj, id: generateUniqueId() };
+    // 有新图片用新图，无图片则为空，绝对不会复用旧图
+    newObj.img = file ? document.getElementById("preview").src : "";
+    dataList.push(newObj);
+  } 
+  // 编辑模式
+  else {
+    const targetIdx = dataList.findIndex(item => item.id === itemId);
+    if (targetIdx === -1) return;
+    const oldObj = dataList[targetIdx];
+    const updateObj = { ...oldObj, ...baseObj };
+    // 【关键修复】有新文件用新图，无新文件保留原图，绝不覆盖
+    updateObj.img = file ? document.getElementById("preview").src : oldObj.img;
+    dataList[targetIdx] = updateObj;
   }
-  const reader = new FileReader();
-  reader.onload = e => {
-    obj.img = e.target.result;
-    idx === "" ? dataList.push(obj) : (dataList[idx] = obj);
-    saveDataToLocal();
-    closeModal();
-    render();
-  };
-  reader.readAsDataURL(file);
+
+  // 保存并关闭
+  saveDataToLocal();
+  closeModal();
+  render();
 }
 
-function del(idx) {
+// ========== 【修复6】删除用唯一ID，不会删错人 ==========
+function del(itemId) {
   if (!confirm("确定删除该档案？")) return;
-  dataList.splice(idx, 1);
+  const targetIdx = dataList.findIndex(item => item.id === itemId);
+  if (targetIdx === -1) return;
+  dataList.splice(targetIdx, 1);
   saveDataToLocal();
   render();
 }
@@ -766,10 +828,15 @@ function importDataWithImage() {
     const reader = new FileReader();
     reader.onload = ev => {
       try {
-        dataList = JSON.parse(ev.target.result);
+        const importData = JSON.parse(ev.target.result);
+        // 导入时自动给所有条目补全唯一ID
+        dataList = importData.map(item => {
+          if (!item.id) item.id = generateUniqueId();
+          return item;
+        });
         saveDataToLocal();
         render();
-        alert("导入成功！数据和图片全部恢复");
+        alert("导入成功！数据和图片全部恢复，已自动补全ID");
       } catch {
         alert("导入失败，文件格式错误");
       }
