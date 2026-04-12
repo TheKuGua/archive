@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>档案管理系统（GitHub版）</title>
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Microsoft Yahei", sans-serif;
+  }
+  body {
+    background: #f0f2f5;
+    min-height: 100vh;
+    padding: 16px;
+  }
+  .login {
+    width: 100%;
+    max-width: 460px;
+    margin: 40px auto;
+    background: #ffffff;
+    border-radius: 20px;
+    padding: 32px 24px;
+    box-shadow: 0 8px 30px rgba(18, 27, 55, 0.08);
+  }
+  .login h2 {
+    text-align: center;
+    margin-bottom: 26px;
+    color: #1d2129;
+    font-size: 22px;
+  }
+  .role-box {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+  .role-btn {
+    flex: 1;
+    min-width: 120px;
+    height: 52px;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s ease;
+  }
+  .btn-admin {
+    background: #e8f3ff;
+    color: #165dff;
+  }
+  .btn-user {
+    background: #f0fff6;
+    color: #00b47c;
+  }
+  .btn-admin.active {
+    background: #165dff;
+    color: #fff;
+    box-shadow: 0 6px 16px rgba(22, 93, 255, 0.3);
+  }
+  .btn-user.active {
+    background: #00b47c;
+    color: #fff;
+    box-shadow: 0 6px 16px rgba(0, 180, 124, 0.3);
+  }
+  .input-box {
+    margin-bottom: 18px;
+  }
+  .input-box label {
+    display: block;
+    font-size: 14px;
+    color: #4e5969;
+    margin-bottom: 8px;
+  }
+  .input-box input {
+    width: 100%;
+    height: 48px;
+    border: 1px solid #e5e6eb;
+    border-radius: 10px;
+    padding: 0 16px;
+    font-size: 15px;
+    outline: none;
+  }
+  .input-box input:focus {
+    border-color: #165dff;
+  }
+  .login-btn {
+    width: 100%;
+    height: 50px;
+    background: #165dff;
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 6px;
+  }
+  .login-btn:hover {
+    background: #0040d6;
+  }
+  .main {
+    display: none;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .top-bar {
+    background: #fff;
+    border-radius: 16px;
+    padding: 16px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 4px 18px rgba(18, 27, 55, 0.06);
+    margin-bottom: 16px;
+  }
+  .top-bar h3 {
+    color: #1d2129;
+    font-size: 20px;
+    flex: 1 1 100%;
+    text-align: center;
+  }
+  .top-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+  }
+  .top-right span {
+    font-size: 14px;
+    color: #4e5969;
+    width: 100%;
+    text-align: center;
+  }
+  .btn {
+    height: 44px;
+    padding: 0 16px;
+    border-radius: 10px;
+    border: none;
+    font-size: 15px;
+    color: #fff;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .btn-export { background: #7b61ff; }
+  .btn-import { background: #165dff; }
+  .btn-logout { background: #ff5757; }
+  .tool-bar {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  #search {
+    flex: 1;
+    min-width: 200px;
+    height: 46px;
+    border: 1px solid #e5e6eb;
+    border-radius: 10px;
+    padding: 0 16px;
+    outline: none;
+    font-size: 15px;
+  }
+  .btn-add {
+    background: #00b47c;
+    color: #fff;
+    height: 46px;
+    padding: 0 20px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    font-size: 15px;
+    white-space: nowrap;
+  }
+  .total-info {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 10px;
+  }
+  .tip {
+    font-size: 12px;
+    color: #999;
+    margin-bottom: 10px;
+  }
+  .table-container {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 4px 18px rgba(18, 27, 55, 0.06);
+  }
+  table {
+    width: 100%;
+    min-width: 900px;
+    border-collapse: collapse;
+  }
+  th {
+    background: #f8f9fc;
+    padding: 14px 10px;
+    text-align: center;
+    font-weight: 600;
+    color: #1d2129;
+    font-size: 15px;
+    white-space: nowrap;
+  }
+  td {
+    padding: 12px 10px;
+    text-align: center;
+    border-bottom: 1px solid #f2f3f8;
+    font-size: 14px;
+    white-space: nowrap;
+  }
+  td img {
+    height: 50px;
+    border-radius: 8px;
+    object-fit: cover;
+  }
+  .action button {
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: none;
+    font-size: 13px;
+    margin: 0 3px;
+    cursor: pointer;
+  }
+  .edit-btn { background: #ffb020; color: #333; }
+  .del-btn { background: #ff5757; color: #fff; }
+  .modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 99;
+    padding: 16px;
+  }
+  .modal-box {
+    background: #fff;
+    width: 100%;
+    max-width: 520px;
+    border-radius: 18px;
+    padding: 28px 24px;
+    position: relative;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .close {
+    position: absolute;
+    top: 16px;
+    right: 18px;
+    font-size: 22px;
+    cursor: pointer;
+    color: #666;
+  }
+  .modal-box h3 {
+    margin-bottom: 20px;
+    font-size: 18px;
+  }
+  .preview {
+    max-height: 120px;
+    margin: 8px 0;
+    display: none;
+    border-radius: 8px;
+    max-width: 100%;
+  }
+  .save-btn {
+    width: 100%;
+    height: 48px;
+    background: #165dff;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    margin-top: 10px;
+    cursor: pointer;
+    font-size: 15px;
+  }
+  #importFile { display: none; }
+  .gender-radio {
+    display: flex;
+    gap: 16px;
+    padding: 8px 0;
+  }
+  .gender-radio label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    font-size: 15px;
+  }
+.addr-select {
+  height: 46px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid #e5e6eb;
+  font-size: 15px;
+  outline: none;
+  min-width: 160px;
+}
+body.modal-open {
+  background: #e0e2e5;
+  transition: background 0.3s ease;
+}
+.detail-modal {
+  display: none;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 460px;
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 30px;
+  box-shadow: 
+    0 20px 60px rgba(0,0,0,0.25),
+    0 8px 20px rgba(0,0,0,0.15),
+    0 0 0 1px rgba(220, 225, 235, 0.8);
+  z-index: 9999;
+  border: 1px solid rgba(255,255,255,0.9);
+  overflow: hidden;
+  animation: modalPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes modalPop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+.detail-modal::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40%;
+  background: linear-gradient(110deg, rgba(255,255,255,0.9) 0%, rgba(245,247,250,0.3) 60%);
+  pointer-events: none;
+  z-index: 1;
+  border-radius: 24px 24px 0 0;
+}
+.detail-content-wrap {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  position: relative;
+  z-index: 2;
+}
+.detail-info {
+  flex: 1;
+}
+.detail-photo {
+  width: 110px;
+  flex-shrink: 0;
+  align-self: flex-start;
+  margin-top: 28px;
+  margin-left: 4px;
+}
+.detail-modal img {
+  width: 100%;
+  aspect-ratio: 3/4;
+  border-radius: 12px;
+  object-fit: cover;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+  transform: translate(-15px, 0);
+}
+.detail-close-wrap {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+  z-index: 3;
+}
+.detail-close {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 24px;
+  color: #666;
+  transition: all 0.25s ease;
+  pointer-events: none;
+}
+.detail-close-wrap:hover .detail-close {
+  color: #000;
+  transform: translate(-50%, -50%) rotate(90deg);
+}
+.detail-modal h3 {
+  margin-bottom: 20px;
+  color: #1d2129;
+  font-size: 22px;
+  font-weight: 700;
+}
+.detail-modal p {
+  margin-bottom: 12px;
+  line-height: 1.8;
+  color: #333;
+  font-size: 15px;
+}
+.detail-modal p strong {
+  color: #165dff;
+  font-weight: 600;
+  font-size: 16px;
+}
+.drag-handle {
+  cursor: grab;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: #f0f2f5;
+  color: #86909c;
+  font-weight: bold;
+  user-select: none;
+  transition: background 0.2s;
+}
+.drag-handle:hover {
+  background: #e5e6eb;
+}
+.dragging {
+  opacity: 0.5;
+  background: #e8f3ff !important;
+}
+</style>
+</head>
+<body>
+<div class="login" id="loginBox">
+  <h2>档案管理系统</h2>
+  <div class="role-box">
+    <button class="role-btn btn-admin" id="adminBtn" onclick="setRole('admin')">管理员登录</button>
+    <button class="role-btn btn-user" id="userBtn" onclick="setRole('user')">普通用户登录</button>
+  </div>
+  <div class="input-box">
+    <label>账号</label>
+    <input id="accountInput" placeholder="请输入账号">
+  </div>
+  <div class="input-box">
+    <label>密码</label>
+    <input id="pwdInput" type="password" placeholder="请输入密码">
+  </div>
+  <button class="login-btn" onclick="login()">立即登录</button>
+</div>
+<div class="main" id="mainBox">
+  <div class="top-bar">
+    <h3>档案数据管理（GitHub云端版）</h3>
+    <div class="top-right">
+      <span id="roleText"></span>
+      <button class="btn" style="background:#00b47c" onclick="loadFromGitHub()">🔄 从GitHub加载</button>
+      <button class="btn btn-export" onclick="exportData()">导出全部数据</button>
+      <button class="btn btn-import" onclick="importDataWithImage()">导入数据（含图片）</button>
+      <button class="btn btn-logout" onclick="logout()">退出登录</button>
+    </div>
+  </div>
+  <div class="tool-bar">
+    <input id="search" placeholder="搜索姓名/编码/职务/地址" oninput="render()">
+    <select id="addrFilter" class="addr-select" onchange="render()">
+      <option value="">全部地址</option>
+      <option value="椿屿">椿屿</option>
+      <option value="霜月镇">霜月镇</option>
+      <option value="诸神">诸神</option>
+      <option value="梦幻小镇">梦幻小镇</option>
+      <option value="碧海市">碧海市</option>
+      <option value="故里">故里</option>
+      <option value="晴川">晴川</option>
+      <option value="谪仙">谪仙</option>
+      <option value="青溪">青溪</option>
+      <option value="江南里">江南里</option>
+    </select>
+    <button class="btn-add" id="addBtn" onclick="add()">新增档案</button>
+  </div>
+  <div class="total-info" id="totalInfo"></div>
+  <p class="tip">💡 数据自动保存在页面内，退出重进不丢失，导出可备份</p>
+  <div class="table-container">
+    <table>
+      <thead id="tableHeader"></thead>
+      <tbody id="dataBody"></tbody>
+    </table>
+  </div>
+</div>
+<div class="modal" id="modal">
+  <div class="modal-box">
+    <div class="close" onclick="closeModal()">&times;</div>
+    <h3 id="modalTitle">新增档案</h3>
+    <input type="hidden" id="editId">
+    <div class="input-box"><label>姓名</label><input id="name"></div>
+    <div class="input-box">
+      <label>性别</label>
+      <div class="gender-radio">
+        <label><input type="radio" name="gender" value="男" checked> 男</label>
+        <label><input type="radio" name="gender" value="女"> 女</label>
+        <label><input type="radio" name="gender" value="保密"> 保密</label>
+      </div>
+    </div>
+    <div class="input-box"><label>身份编码</label><input id="code"></div>
+    <div class="input-box"><label>职务</label><input id="job"></div>
+    <div class="input-box"><label>地址</label><input id="addr"></div>
+    <div class="input-box">
+      <label>上传照片</label>
+      <input type="file" id="imgFile" accept="image/*">
+      <img id="preview" class="preview">
+    </div>
+    <button class="save-btn" onclick="save()">保存档案</button>
+  </div>
+</div>
+<div class="detail-modal" id="detailModal">
+  <div class="detail-close-wrap" onclick="closeDetail()">
+    <span class="detail-close">&times;</span>
+  </div>
+  <div id="detailContent"></div>
+</div>
+<input type="file" id="importFile" accept=".json" style="display:none;">
+<script>
+const STORAGE_KEY = 'archiveSystemData';
+let role = null;
+let userType = null;
+let dataList = [];
+let draggedIndex = -1;
+// GitHub 直连配置（完全保留原配置）
+const GITHUB_BASE = "https://TheKuGua.github.io/archive/";
+const JSON_URL = `${GITHUB_BASE}档案数据.json`;
+
+// 生成全局唯一ID，彻底解决下标错乱、图片串改问题
+function generateUniqueId() {
+  return Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+}
+
+// 【修复1】完善GitHub加载容错，避免404/网络错误导致页面崩溃
+async function loadFromGitHub() {
+  try {
+    const res = await fetch(JSON_URL);
+    // 新增响应状态判断，404/权限错误直接抛出明确提示
+    if (!res.ok) throw new Error(`GitHub文件访问失败，状态码：${res.status}`);
+    const remoteData = await res.json();
+    // 兼容旧数据：给没有ID的历史条目补全ID
+    dataList = remoteData.map(item => {
+      if (!item.id) item.id = generateUniqueId();
+      return item;
+    });
+    saveDataToLocal();
+    render();
+    alert("✅ GitHub 加载成功！已自动补全数据ID");
+  } catch (err) {
+    console.error("GitHub加载失败详情：", err);
+    alert(`❌ GitHub 加载失败\n原因：${err.message}\n请检查：仓库是否公开、JSON文件路径是否正确、网络是否正常`);
+  }
+}
+
+function initTableHeader() {
+  const header = document.getElementById('tableHeader');
+  if (userType === 'admin') {
+    header.innerHTML = `
+      <tr>
+        <th style="width: 50px;">拖拽</th>
+        <th>序号</th>
+        <th>姓名</th>
+        <th>性别</th>
+        <th>身份编码</th>
+        <th>职务</th>
+        <th>地址</th>
+        <th>照片</th>
+        <th>操作</th>
+      </tr>
+    `;
+  } else {
+    header.innerHTML = `
+      <tr>
+        <th>序号</th>
+        <th>姓名</th>
+        <th>性别</th>
+        <th>身份编码</th>
+        <th>职务</th>
+        <th>地址</th>
+        <th>照片</th>
+        <th>操作</th>
+      </tr>
+    `;
+  }
+}
+
+// 【修复2】重写页面初始化逻辑，彻底解决GitHub加载失败导致页面白屏、逻辑顺序错误
+window.onload = function () {
+  // 图片预览监听（提前绑定，保证功能正常）
+  document.getElementById("imgFile").onchange = function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const preview = document.getElementById("preview");
+      preview.src = ev.target.result;
+      preview.style.display = "block";
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // 第一步：优先加载本地数据，保证页面100%能正常打开，不依赖GitHub
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      // 兼容本地旧数据，自动补全唯一ID
+      dataList = JSON.parse(saved).map(item => {
+        if (!item.id) item.id = generateUniqueId();
+        return item;
+      });
+    }
+  } catch (e) {
+    console.error("本地数据加载失败", e);
+  }
+
+  // 第二步：页面渲染优先执行，保证用户能看到界面
+  render();
+
+  // 第三步：后台异步尝试加载GitHub数据，失败不影响页面使用
+  (async () => {
+    try {
+      await loadFromGitHub();
+    } catch (e) {
+      // 静默捕获错误，不影响页面主逻辑
+      console.error("初始化GitHub加载失败，已降级使用本地数据", e);
+    }
+  })();
+};
+
+function saveDataToLocal() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(dataList)); } catch(e) {}
+}
+
+function setRole(type) {
+  role = type;
+  const adminBtn = document.getElementById("adminBtn");
+  const userBtn = document.getElementById("userBtn");
+  adminBtn.classList.remove("active");
+  userBtn.classList.remove("active");
+  (type === "admin" ? adminBtn : userBtn).classList.add("active");
+}
+
+function login() {
+  if (!role) { alert("请先选择登录身份"); return; }
+  const account = document.getElementById("accountInput").value.trim();
+  const pwd = document.getElementById("pwdInput").value.trim();
+  const isAdmin = (role === "admin" && account === "KuGua" && pwd === "521521");
+  const isUser  = (role === "user"  && account === "user"  && pwd === "123456");
+  if (!isAdmin && !isUser) { alert("账号或密码错误"); return; }
+  userType = role;
+  initTableHeader();
+  document.getElementById("loginBox").style.display = "none";
+  document.getElementById("mainBox").style.display = "block";
+  document.getElementById("roleText").innerText = userType === "admin" ? "管理员" : "普通用户";
+  render();
+}
+
+function logout() {
+  role = null; userType = null;
+  document.getElementById("loginBox").style.display = "block";
+  document.getElementById("mainBox").style.display = "none";
+  document.getElementById("accountInput").value = "";
+  document.getElementById("pwdInput").value = "";
+  document.getElementById("adminBtn").classList.remove("active");
+  document.getElementById("userBtn").classList.remove("active");
+}
+
+function render() {
+  const list = dataList;
+  const key = document.getElementById("search").value.toLowerCase().trim();
+  const addrVal = document.getElementById("addrFilter").value.trim();
+  const dataBody = document.getElementById("dataBody");
+  dataBody.innerHTML = "";
+
+  // 筛选逻辑（完全保留原逻辑）
+  let filtered = list.filter(item => {
+    const nameMatch = (item.name||"").toLowerCase().includes(key);
+    const codeMatch = (item.code||"").toLowerCase().includes(key);
+    const jobMatch = (item.job||"").toLowerCase().includes(key);
+    const addrMatch = (item.addr||"").toLowerCase().includes(key);
+    return nameMatch || codeMatch || jobMatch || addrMatch;
+  });
+  if (addrVal) {
+    filtered = filtered.filter(item => 
+      (item.addr||"").toLowerCase().includes(addrVal.toLowerCase())
+    );
+  }
+
+  // 总数统计
+  document.getElementById("totalInfo").innerText = key || addrVal
+    ? `共 ${filtered.length} 条匹配 | 总档案：${list.length}`
+    : `当前总档案数：${list.length}`;
+
+  // 渲染用唯一ID定位，彻底杜绝下标找错、编辑错人
+  filtered.forEach((item, index) => {
+    const realIdx = list.findIndex(i => i.id === item.id);
+    const row = document.createElement('tr');
+    row.onclick = () => showDetail(realIdx);
+    row.style.cursor = 'pointer';
+    row.dataset.itemId = item.id;
+
+    if (userType === 'admin') {
+      row.draggable = true;
+      row.ondragstart = (e) => handleDragStart(e, realIdx);
+      row.ondragover = handleDragOver;
+      row.ondrop = (e) => handleDrop(e, realIdx);
+    }
+
+    row.innerHTML = `
+      ${userType === 'admin' ? `<td><span class="drag-handle">≡</span></td>` : ''}
+      <td>${realIdx+1}</td>
+      <td>${item.name||''}</td>
+      <td>${item.gender||''}</td>
+      <td>${item.code||''}</td>
+      <td>${item.job||''}</td>
+      <td>${item.addr||''}</td>
+      <td>${item.img?`<img src="${item.img}">`:'-'}</td>
+      <td class="action">
+        ${userType==='admin'?`
+        <button class="edit-btn" onclick="event.stopPropagation();edit('${item.id}')">编辑</button>
+        <button class="del-btn" onclick="event.stopPropagation();del('${item.id}')">删除</button>
+        `:'仅查看'}
+      </td>
+    `;
+    dataBody.appendChild(row);
+  });
+}
+
+// 新增档案，彻底清空预览图，杜绝图片污染、复用旧图
+function add() {
+  document.getElementById("modalTitle").innerText = "新增档案";
+  document.getElementById("editId").value = "";
+  // 清空所有表单字段
+  document.getElementById("name").value = "";
+  document.querySelector('input[name="gender"][value="男"]').checked = true;
+  document.getElementById("code").value = "";
+  document.getElementById("job").value = "";
+  document.getElementById("addr").value = "";
+  // 【关键修复】彻底清空图片相关，100%杜绝旧图片污染
+  document.getElementById("imgFile").value = "";
+  const preview = document.getElementById("preview");
+  preview.src = "";
+  preview.style.display = "none";
+  // 打开弹窗
+  document.getElementById("modal").style.display = "flex";
+}
+
+// 编辑档案，用唯一ID定位，永远不会找错人
+function edit(itemId) {
+  const d = dataList.find(item => item.id === itemId);
+  if (!d) return;
+
+  document.getElementById("modalTitle").innerText = "编辑档案";
+  document.getElementById("editId").value = itemId;
+  // 填充表单
+  document.getElementById("name").value = d.name || "";
+  document.querySelectorAll('input[name="gender"]').forEach(r=>r.checked=false);
+  const g = document.querySelector(`input[name="gender"][value="${d.gender}"]`);
+  if(g) g.checked = true;
+  document.getElementById("code").value = d.code || "";
+  document.getElementById("job").value = d.job || "";
+  document.getElementById("addr").value = d.addr || "";
+  // 填充预览图，不污染其他条目
+  const preview = document.getElementById("preview");
+  preview.src = d.img || "";
+  preview.style.display = d.img ? "block" : "none";
+  document.getElementById("imgFile").value = "";
+  // 打开弹窗
+  document.getElementById("modal").style.display = "flex";
+}
+
+// 【修复3】完善保存逻辑，彻底解决图片覆盖、两个人图片变一样的问题
+function save() {
+  const itemId = document.getElementById("editId").value;
+  const file = document.getElementById("imgFile").files[0];
+  const gender = document.querySelector('input[name="gender"]:checked').value;
+  const baseObj = {
+    name: document.getElementById("name").value || "",
+    gender: gender,
+    code: document.getElementById("code").value || "",
+    job: document.getElementById("job").value || "",
+    addr: document.getElementById("addr").value || ""
+  };
+
+  // 新增模式
+  if (!itemId) {
+    const newObj = { ...baseObj, id: generateUniqueId() };
+    // 有新图片用新图，无图片则为空，绝对不会复用旧图
+    newObj.img = file ? document.getElementById("preview").src : "";
+    dataList.push(newObj);
+  } 
+  // 编辑模式
+  else {
+    const targetIdx = dataList.findIndex(item => item.id === itemId);
+    if (targetIdx === -1) return;
+    const oldObj = dataList[targetIdx];
+    const updateObj = { ...oldObj, ...baseObj };
+    // 【核心修复】有新文件用新图，无新文件100%保留原图，绝不覆盖
+    updateObj.img = file ? document.getElementById("preview").src : oldObj.img;
+    dataList[targetIdx] = updateObj;
+  }
+
+  // 保存并关闭
+  saveDataToLocal();
+  closeModal();
+  render();
+}
+
+// 删除档案，用唯一ID定位，不会删错人
+function del(itemId) {
+  if (!confirm("确定删除该档案？")) return;
+  const targetIdx = dataList.findIndex(item => item.id === itemId);
+  if (targetIdx === -1) return;
+  dataList.splice(targetIdx, 1);
+  saveDataToLocal();
+  render();
+}
+
+function closeModal() {
+  document.getElementById("modal").style.display = "none";
+}
+
+function exportData() {
+  const data = JSON.stringify(dataList, null, 2);
+  const blob = new Blob([data], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "档案数据.json";
+  a.click();
+  alert("导出成功！包含所有数据和图片");
+}
+
+function importDataWithImage() {
+  const inp = document.createElement("input");
+  inp.type = "file";
+  inp.accept = ".json";
+  inp.onchange = e => {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const importData = JSON.parse(ev.target.result);
+        // 导入时自动给所有条目补全唯一ID
+        dataList = importData.map(item => {
+          if (!item.id) item.id = generateUniqueId();
+          return item;
+        });
+        saveDataToLocal();
+        render();
+        alert("导入成功！数据和图片全部恢复，已自动补全ID");
+      } catch {
+        alert("导入失败，文件格式错误");
+      }
+    };
+    reader.readAsText(e.target.files[0]);
+  };
+  inp.click();
+}
+
+function showDetail(idx) {
+  const d = dataList[idx];
+  document.getElementById("detailContent").innerHTML = `
+    <div class="detail-content-wrap">
+      <div class="detail-info">
+        <h3>${d.name||'无姓名'}</h3>
+        <p><strong>性别：</strong>${d.gender||'-'}</p>
+        <p><strong>编码：</strong>${d.code||'-'}</p>
+        <p><strong>职务：</strong>${d.job||'-'}</p>
+        <p><strong>地址：</strong>${d.addr||'-'}</p>
+      </div>
+      <div class="detail-photo">
+        ${d.img ? `<img src="${d.img}">` : ''}
+      </div>
+    </div>
+  `;
+  document.getElementById("detailModal").style.display = "block";
+  document.body.classList.add('modal-open');
+}
+
+function closeDetail() {
+  document.getElementById("detailModal").style.display = "none";
+  document.body.classList.remove('modal-open');
+}
+
+function handleDragStart(event, index) {
+  draggedIndex = index;
+  event.target.classList.add('dragging');
+  event.dataTransfer.effectAllowed = 'move';
+}
+
+function handleDragOver(event) {
+  event.preventDefault();
+  event.dataTransfer.dropEffect = 'move';
+}
+
+function handleDrop(event, targetIndex) {
+  event.preventDefault();
+  const draggingElement = document.querySelector('.dragging');
+  if (draggingElement) draggingElement.classList.remove('dragging');
+  
+  if (draggedIndex !== -1 && draggedIndex !== targetIndex) {
+    const [draggedItem] = dataList.splice(draggedIndex, 1);
+    dataList.splice(targetIndex, 0, draggedItem);
+    saveDataToLocal();
+    render();
+  }
+  draggedIndex = -1;
+}
+</script>
+</body>
+</html>
