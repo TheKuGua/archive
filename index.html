@@ -529,8 +529,9 @@ let userType = null;
 let dataList = [];
 let draggedIndex = -1;
 // GitHub 直连配置（完全保留原配置）
-const GITHUB_BASE = "https://TheKuGua.github.io/archive/";
-const JSON_URL = `${GITHUB_BASE}档案数据.json`;
+// 直接用Raw地址，不会受部署域名影响，彻底避免路径错误
+const JSON_URL = "https://raw.githubusercontent.com/TheKuGua/archive/main/档案数据.json";
+
 
 // 生成全局唯一ID，彻底解决下标错乱、图片串改问题
 function generateUniqueId() {
